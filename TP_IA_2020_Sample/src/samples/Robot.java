@@ -1,27 +1,34 @@
 package samples;
 
-import org.w3c.dom.css.Rect;
-import robocode.*;
+import Genetic.AG;
+import Genetic.ConfAG;
 import impl.Point;
 import impl.UIConfiguration;
+import interf.IPoint;
+import performance.EvaluateFire;
+import robocode.AdvancedRobot;
+import robocode.Bullet;
+import robocode.RobotDeathEvent;
+import robocode.ScannedRobotEvent;
+import utils.Utils;
+
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import interf.IPoint;
-import robocode.Robot;
-import utils.Utils;
 
-public class WalkerRobot extends AdvancedRobot
-{
-    /*
-     * lista de obstáculos, preenchida ao fazer scan
-     * */
+public class Robot extends AdvancedRobot {
+
+
     private List<Rectangle> obstacles;
     public static UIConfiguration conf;
     private List<IPoint> points;
     private HashMap<String, Rectangle> inimigos; //utilizada par associar inimigos a retângulos e permitir remover retângulos de inimigos já desatualizados
+
+    //variável que contém o ponto atual para o qual o robot se está a dirigir
+    private int currentPoint = -1;
 
     @Override
     public void run()
@@ -33,19 +40,30 @@ public class WalkerRobot extends AdvancedRobot
         conf = new UIConfiguration((int) getBattleFieldWidth(), (int) getBattleFieldHeight() , obstacles);
 
         while(true){
-            this.turnRadarRight(360);
+            this.setTurnRadarRight(360);
 
-            //this.ahead(100);
-            //this.turnLeft(100);
+            //se se está a dirigir para algum ponto
+            if (currentPoint >= 0)
+            {
+                IPoint ponto = points.get(currentPoint);
+                //se já está no ponto ou lá perto...
+                if (Utils.getDistance(this, ponto.getX(), ponto.getY()) < 2){
+                    currentPoint++;
+                    //se chegou ao fim do caminho
+                    if (currentPoint >= points.size())
+                        currentPoint = -1;
+                }
 
-            //this.execute();
+                advancedRobotGoTo(this, ponto.getX(), ponto.getY());
+            }
+
+            this.execute();
         }
     }
 
     @Override
     public void onMouseClicked(MouseEvent e) {
         super.onMouseClicked(e);
-
 
         conf.setStart(new Point((int) this.getX(), (int) this.getY()));
         conf.setEnd(new Point(e.getX(), e.getY()));
@@ -54,16 +72,24 @@ public class WalkerRobot extends AdvancedRobot
          * TODO: Implementar a chamada ao algoritmo genético!
          *
          * */
-        System.out.println("Choo Choo!!!");
-        points = new ArrayList<>();
-        points.add(new Point(100,100));
-        points.add(new Point(200,200));
-        points.add(new Point(250,500));
-        points.add(new Point(300,350));
+        AG ag = new AG(conf);
 
-        for (int i=0;i<points.size();i++)
-            robotGoTo(this, points.get(i).getX(), points.get(i).getY());
-            //Utils.advancedRobotGoTo(this, points.get(i).getX(), points.get(i).getY());
+        try {
+            ag.run();
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+
+        points = ag.getPoints();
+
+
+        for (int i=0;i<points.size();i++) {
+            System.out.println(points.get(i));
+            //Utils.robotGoTo(this, points.get(i).getX(), points.get(i).getY());
+            advancedRobotGoTo(this, points.get(i).getX(), points.get(i).getY());
+        }
+
+        currentPoint = 0;
     }
 
     /**
@@ -87,9 +113,10 @@ public class WalkerRobot extends AdvancedRobot
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
         super.onScannedRobot(event);
-        System.out.println("yoooooooooooooooooooooooooo");
+        System.out.println("yooo");
 
         Bullet b = this.fireBullet(3);
+
         if(b == null)
             System.out.println("Não disparei");
         else
@@ -108,8 +135,7 @@ public class WalkerRobot extends AdvancedRobot
 
         obstacles.add(rect);
         inimigos.put(event.getName(), rect);
-
-        conf.setObstacles(obstacles);
+        //conf.setObstacles(obstacles);
 
         //System.out.println("Enemies at:");
         //obstacles.forEach(x -> System.out.println(x));
@@ -133,34 +159,12 @@ public class WalkerRobot extends AdvancedRobot
      * @param distance distância ao alvo
      * @return coordenadas do alvo
      * */
-    public static Point2D.Double getEnemyCoordinates(Robot robot, double bearing, double distance){
+    public static Point2D.Double getEnemyCoordinates(robocode.Robot robot, double bearing, double distance){
         double angle = Math.toRadians((robot.getHeading() + bearing) % 360);
 
         return new Point2D.Double((robot.getX() + Math.sin(angle) * distance), (robot.getY() + Math.cos(angle) * distance));
     }
 
-    /**
-     * Dirige o robot (RobotSimples) para determinadas coordenadas
-     *
-     * @param robot o meu robot
-     * @param x coordenada x do alvo
-     * @param y coordenada y do alvo
-     * */
-    public static void robotGoTo(Robot robot, double x, double y)
-    {
-        x -= robot.getX();
-        y -= robot.getY();
-
-        double angleToTarget = Math.atan2(x, y);
-        double targetAngle = robocode.util.Utils.normalRelativeAngle(angleToTarget - Math.toRadians(robot.getHeading()));
-        double distance = Math.hypot(x, y);
-        double turnAngle = Math.atan(Math.tan(targetAngle));
-        robot.turnRight(Math.toDegrees(turnAngle));
-        if (targetAngle == turnAngle)
-            robot.ahead(distance);
-        else
-            robot.back(distance);
-    }
 
     private void drawThickLine(Graphics g, int x1, int y1, int x2, int y2, int thickness, Color c) {
 
@@ -193,4 +197,46 @@ public class WalkerRobot extends AdvancedRobot
 
         g.fillPolygon(xPoints, yPoints, 4);
     }
+
+
+    /**
+     * Dirige o robot (AdvancedRobot) para determinadas coordenadas
+     *
+     * @param robot o meu robot
+     * @param x coordenada x do alvo
+     * @param y coordenada y do alvo
+     * */
+    public static void advancedRobotGoTo(AdvancedRobot robot, double x, double y) {
+        x -= robot.getX();
+        y -= robot.getY();
+
+        double angleToTarget = Math.atan2(x, y);
+        double targetAngle = robocode.util.Utils.normalRelativeAngle(angleToTarget - Math.toRadians(robot.getHeading()));
+        double distance = Math.hypot(x, y);
+        double turnAngle = Math.atan(Math.tan(targetAngle));
+        robot.setTurnRight(Math.toDegrees(turnAngle));
+        if (targetAngle == turnAngle)
+            robot.setAhead(distance);
+        else
+            robot.setBack(distance);
+        robot.execute();
+    }
+
+    /*
+    public static void advancedRobotGoTo(robocode.Robot robot, double x, double y)
+    {
+        x -= robot.getX();
+        y -= robot.getY();
+
+        double angleToTarget = Math.atan2(x, y);
+        double targetAngle = robocode.util.Utils.normalRelativeAngle(angleToTarget - Math.toRadians(robot.getHeading()));
+        double distance = Math.hypot(x, y);
+        double turnAngle = Math.atan(Math.tan(targetAngle));
+        robot.turnRight(Math.toDegrees(turnAngle));
+        if (targetAngle == turnAngle)
+            robot.ahead(distance);
+        else
+            robot.back(distance);
+    }*/
+
 }
