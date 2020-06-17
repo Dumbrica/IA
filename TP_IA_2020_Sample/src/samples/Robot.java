@@ -47,7 +47,7 @@ public class Robot extends AdvancedRobot {
         super.run();
         ef = new EvaluateFire("omae wa mou shindeiru");
         try {
-            model=new EasyPredictModelWrapper(MojoModel.load("H2oModels/Arvore1Dataset2.zip"));
+            model=new EasyPredictModelWrapper(MojoModel.load("H2oModels/gbm_94ce1cbd_1e62_481b_976a_68fd4f94b301.zip"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -55,9 +55,9 @@ public class Robot extends AdvancedRobot {
         inimigos = new HashMap<>();
         conf = new UIConfiguration((int) getBattleFieldWidth(), (int) getBattleFieldHeight() , obstacles);
         while(true){
-            /*setAhead(100);
-            setTurnLeft(100);*/
-            setTurnGunLeft(360);
+            setAhead(100);
+            setTurnLeft(180);
+            //setTurnGunLeft(360);
             //se se está a dirigir para algum ponto
             if (currentPoint >= 0)
             {
@@ -141,8 +141,11 @@ public class Robot extends AdvancedRobot {
         } catch (PredictException e) {
             e.printStackTrace();
         }
+        if(this.getEnergy()>30){
+            System.out.println(this.getEnergy());
+
         if(p.classProbabilities[1]>0.60){
-            Bullet b = this.fireBullet(3);
+            Bullet b = this.fireBullet(2);
             if(b!=null){
                 System.out.println(event.getName()+"->"+Arrays.toString(p.classProbabilities));
                 balasNoAr.put(b, new Dados(event.getName()));
@@ -151,7 +154,7 @@ public class Robot extends AdvancedRobot {
         else if(p.classProbabilities[1]>0.70){
 
 
-            Bullet b = this.fireBullet(4);
+            Bullet b = this.fireBullet(5);
             if(b!=null){
                 System.out.println(event.getName()+"->"+Arrays.toString(p.classProbabilities));
                 balasNoAr.put(b, new Dados(event.getName()));
@@ -171,14 +174,14 @@ public class Robot extends AdvancedRobot {
         else if(p.classProbabilities[1]>0.90){
 
 
-            Bullet b = this.fireBullet(8);
+            Bullet b = this.fireBullet(15);
             if(b!=null){
                 System.out.println(event.getName()+"->"+Arrays.toString(p.classProbabilities));
                 balasNoAr.put(b, new Dados(event.getName()));
             }
 
         }
-
+        }
 
 
 
@@ -284,6 +287,7 @@ public class Robot extends AdvancedRobot {
     @Override
     public void onBattleEnded(BattleEndedEvent event) {
         super.onBattleEnded(event);
+        System.out.println("arroz");
         ef.submit(event.getResults());
     }
     /*
