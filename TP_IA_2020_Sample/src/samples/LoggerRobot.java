@@ -13,14 +13,12 @@ public class LoggerRobot extends AdvancedRobot {
     private class Dados{
         String nome;
         Double distancia;
-        Double temperatura;
-        Boolean isMoving;
+        Double velocidade;
 
-        public Dados(String nome, Double distancia,Double temperatura,Boolean isMoving) {
+        public Dados(String nome, Double distancia,Double velocidade) {
             this.nome = nome;
             this.distancia = distancia;
-            this.temperatura = temperatura;
-            this.isMoving = isMoving;
+            this.velocidade=velocidade;
         }
     }
     Boolean isMoving;
@@ -41,34 +39,21 @@ public class LoggerRobot extends AdvancedRobot {
         }
 
         while(true){
-            if(getRoundNum()%2==0){
-                setAhead(100);
-                isMoving=true;
-            }else{
-                isMoving=false;
-            }
-
+            setAhead(100);
             setTurnLeft(100);
-            Random rand = new Random();
-            setAllColors(new Color(rand.nextInt(3), rand.nextInt(3), rand.nextInt(3)));
             execute();
         }
 
     }
-
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
         super.onScannedRobot(event);
 
             Bullet b = fireBullet(3);
-
             if (b!=null){
-                balasNoAr.put(b, new Dados(event.getName(), event.getDistance(),this.getGunHeat(),isMoving));
+                balasNoAr.put(b, new Dados(event.getName(), event.getDistance(),event.getVelocity()));
             }
-
-
-
     }
 
     @Override
@@ -79,9 +64,9 @@ public class LoggerRobot extends AdvancedRobot {
         {
             //testar se acertei em quem era suposto
             if (event.getName().equals(event.getBullet().getVictim()))
-                fw.write(d.nome+","+d.distancia+","+d.temperatura+","+d.isMoving+",acertei\n");
+                fw.write(d.nome+","+d.distancia+","+d.velocidade+",1\n");
             else
-                fw.write(d.nome+","+d.distancia+","+d.temperatura+","+d.isMoving+",falhei\n");
+                fw.write(d.nome+","+d.distancia+","+d.velocidade+",0\n");
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -94,7 +79,7 @@ public class LoggerRobot extends AdvancedRobot {
         super.onBulletMissed(event);
         Dados d = balasNoAr.get(event.getBullet());
         try {
-            fw.write(d.nome+","+d.distancia+","+d.temperatura+","+d.isMoving+",falhei\n");
+            fw.write(d.nome+","+d.distancia+","+d.velocidade+",0\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -106,7 +91,7 @@ public class LoggerRobot extends AdvancedRobot {
         super.onBulletHitBullet(event);
         Dados d = balasNoAr.get(event.getBullet());
         try {
-            fw.write(d.nome+","+d.distancia+","+d.temperatura+","+d.isMoving+",falhei\n");
+            fw.write(d.nome+","+d.distancia+","+d.velocidade+",0\n");
         } catch (IOException e) {
             e.printStackTrace();
         }

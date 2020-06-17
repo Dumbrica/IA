@@ -25,6 +25,18 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://D:/Downloads/h2o-3.30.0.2/h2o.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="jar://D:/Downloads/h2o-3.30.0.2/h2o.jar!/" />
+        </SOURCES>
+      </library>
+    </orderEntry>
     <orderEntry type="library" exported="" name="robocode" level="project" />
+    <orderEntry type="library" exported="" name="h2o" level="project" />
   </component>
 </module>
