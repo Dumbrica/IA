@@ -261,6 +261,16 @@ public class Robot extends AdvancedRobot {
         g.fillPolygon(xPoints, yPoints, 4);
     }
 
+    @Override
+    public void onRobotDeath(RobotDeathEvent event) {
+        super.onRobotDeath(event);
+
+        Rectangle rect = inimigos.get(event.getName());
+        obstacles.remove(rect);
+        inimigos.remove(event.getName());
+
+    }
+
 
     /**
      * Dirige o robot (AdvancedRobot) para determinadas coordenadas
