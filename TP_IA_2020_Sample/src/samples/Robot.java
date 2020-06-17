@@ -2,26 +2,36 @@ package samples;
 
 import Genetic.AG;
 import Genetic.ConfAG;
+import hex.genmodel.MojoModel;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import impl.Point;
 import impl.UIConfiguration;
 import interf.IPoint;
 import performance.EvaluateFire;
-import robocode.AdvancedRobot;
-import robocode.Bullet;
-import robocode.RobotDeathEvent;
-import robocode.ScannedRobotEvent;
+import robocode.*;
 import utils.Utils;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 public class Robot extends AdvancedRobot {
+    private class Dados{
+        String nome;
 
-
+        public Dados(String nome) {
+            this.nome = nome;
+        }
+    }
+    EvaluateFire ef;
     private List<Rectangle> obstacles;
     public static UIConfiguration conf;
     private List<IPoint> points;
@@ -29,19 +39,25 @@ public class Robot extends AdvancedRobot {
 
     //variável que contém o ponto atual para o qual o robot se está a dirigir
     private int currentPoint = -1;
-
+    HashMap<Bullet, Dados> balasNoAr = new HashMap<>();
+    EasyPredictModelWrapper model;
     @Override
     public void run()
     {
         super.run();
-
+        ef = new EvaluateFire("omae wa mou shindeiru");
+        try {
+            model=new EasyPredictModelWrapper(MojoModel.load("H2oModels/Arvore1Dataset2.zip"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         obstacles = new ArrayList<>();
         inimigos = new HashMap<>();
         conf = new UIConfiguration((int) getBattleFieldWidth(), (int) getBattleFieldHeight() , obstacles);
-
         while(true){
-            this.setTurnRadarRight(360);
-
+            /*setAhead(100);
+            setTurnLeft(100);*/
+            setTurnGunLeft(360);
             //se se está a dirigir para algum ponto
             if (currentPoint >= 0)
             {
@@ -84,7 +100,6 @@ public class Robot extends AdvancedRobot {
 
 
         for (int i=0;i<points.size();i++) {
-            System.out.println(points.get(i));
             //Utils.robotGoTo(this, points.get(i).getX(), points.get(i).getY());
             advancedRobotGoTo(this, points.get(i).getX(), points.get(i).getY());
         }
@@ -113,16 +128,59 @@ public class Robot extends AdvancedRobot {
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
         super.onScannedRobot(event);
-        System.out.println("yooo");
+        ef.addScanned(event);
 
-        Bullet b = this.fireBullet(3);
+        RowData row= new RowData();
+        row.put("Robot",event.getName());
+        row.put("Distancia",event.getDistance());
+        row.put("Velocidade",event.getVelocity());
 
-        if(b == null)
-            System.out.println("Não disparei");
-        else
-            System.out.println("Disparei ao "+event.getName());
+        BinomialModelPrediction p= null;
+        try {
+            p = model.predictBinomial(row);
+        } catch (PredictException e) {
+            e.printStackTrace();
+        }
+        if(p.classProbabilities[1]>0.60){
+            Bullet b = this.fireBullet(3);
+            if(b!=null){
+                System.out.println(event.getName()+"->"+Arrays.toString(p.classProbabilities));
+                balasNoAr.put(b, new Dados(event.getName()));
+            }
+        }
+        else if(p.classProbabilities[1]>0.70){
 
-        System.out.println("Enemy spotted: "+event.getName());
+
+            Bullet b = this.fireBullet(4);
+            if(b!=null){
+                System.out.println(event.getName()+"->"+Arrays.toString(p.classProbabilities));
+                balasNoAr.put(b, new Dados(event.getName()));
+            }
+
+        }
+        else if(p.classProbabilities[1]>0.80){
+
+
+            Bullet b = this.fireBullet(6);
+            if(b!=null){
+                System.out.println(event.getName()+"->"+Arrays.toString(p.classProbabilities));
+                balasNoAr.put(b, new Dados(event.getName()));
+            }
+
+        }
+        else if(p.classProbabilities[1]>0.90){
+
+
+            Bullet b = this.fireBullet(8);
+            if(b!=null){
+                System.out.println(event.getName()+"->"+Arrays.toString(p.classProbabilities));
+                balasNoAr.put(b, new Dados(event.getName()));
+            }
+
+        }
+
+
+
 
         Point2D.Double ponto = getEnemyCoordinates(this, event.getBearing(), event.getDistance());
         ponto.x -= this.getWidth()*2.5 / 2;
@@ -142,13 +200,15 @@ public class Robot extends AdvancedRobot {
     }
 
     @Override
-    public void onRobotDeath(RobotDeathEvent event) {
-        super.onRobotDeath(event);
+    public void onBulletHit(BulletHitEvent event) {
+        super.onBulletHit(event);
+        ef.addHit(event);
+        Dados d = balasNoAr.get(event.getBullet());
+            //testar se acertei em quem era suposto
+            if (event.getName().equals(event.getBullet().getVictim()))
+                System.out.println("acertou");
 
-        Rectangle rect = inimigos.get(event.getName());
-        obstacles.remove(rect);
-        inimigos.remove(event.getName());
-
+        balasNoAr.remove(event.getBullet());
     }
 
     /**
@@ -221,7 +281,11 @@ public class Robot extends AdvancedRobot {
             robot.setBack(distance);
         robot.execute();
     }
-
+    @Override
+    public void onBattleEnded(BattleEndedEvent event) {
+        super.onBattleEnded(event);
+        ef.submit(event.getResults());
+    }
     /*
     public static void advancedRobotGoTo(robocode.Robot robot, double x, double y)
     {
