@@ -86,7 +86,7 @@ public class AG {
 
         //Evaluate eval = new Evaluate(ConfAG.pop_size,map_id,"omae wa mou shindeiru");
 
-        while (iteration_counter < this.generation_limit  && convergence_counter < ConfAG.converence_limit) {
+        while (iteration_counter < ConfAG.generation_limit  && convergence_counter < ConfAG.converence_limit) {
 
             System.out.println("Iteration: " + iteration_counter);
 
@@ -101,7 +101,7 @@ public class AG {
 
             //aleatórias
             filhos.addAll(Stream.generate(() -> new Chromosome(uiConf))
-                    .limit(this.random_limit)
+                    .limit(ConfAG.random_limit)
                     .collect(Collectors.toList()));
 
             //nova geração é resultado de acrescentar os melhores aos filhos por cruzamento e mutação

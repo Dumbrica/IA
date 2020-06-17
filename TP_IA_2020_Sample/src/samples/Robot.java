@@ -47,7 +47,7 @@ public class Robot extends AdvancedRobot {
         super.run();
         ef = new EvaluateFire("omae wa mou shindeiru");
         try {
-            model=new EasyPredictModelWrapper(MojoModel.load("H2oModels/Arvore1Dataset2.zip"));
+            model=new EasyPredictModelWrapper(MojoModel.load("H2oModels/gbm_94ce1cbd_1e62_481b_976a_68fd4f94b301.zip"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -256,6 +256,16 @@ public class Robot extends AdvancedRobot {
         yPoints[3] = y2 + dy;
 
         g.fillPolygon(xPoints, yPoints, 4);
+    }
+
+    @Override
+    public void onRobotDeath(RobotDeathEvent event) {
+        super.onRobotDeath(event);
+
+        Rectangle rect = inimigos.get(event.getName());
+        obstacles.remove(rect);
+        inimigos.remove(event.getName());
+
     }
 
 
